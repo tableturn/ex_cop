@@ -97,3 +97,14 @@ If you decide to use the `check` function, be mindful of the following:
 - You can use the following bindings `subject`, `user`, `parent`, `field`, `context` and `args`.
 - Your check block will allow access if it returns anything else than `false`-ey.
 - The check function is performed after pattern matching - meaning that once the check block is entered, no further policy will be evaluated, even if the check block returns `false`-ey.
+
+## Verifying Policies
+
+To check for a policy, you can do something like this:
+
+```elixir
+defmodule MyApp.Police do
+  def check(source, user, parent, field, context, args),
+    do: source |> ExCop.Policy.Protocol.can?(user, parent, field, context, args)
+end
+```
