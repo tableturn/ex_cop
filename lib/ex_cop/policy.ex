@@ -1,5 +1,22 @@
-defmodule ExCop.Policy do
-  alias ExCop.Policy.Protocol
+defmodule ExCop.Police do
+  @type subject :: any
+  @type user :: Protocol.user()
+  @type parent :: Protocol.parent()
+  @type field :: Protocol.field()
+  @type context :: Protocol.context()
+  @type args :: Protocol.args()
+  @type error_response :: Protocol.error_response()
+  @type response :: Protocol.response()
+
+  @callback check(subject, user, parent, field, context, args) :: response
+
+  def __using__(_opts \\ []) do
+    quote location: :keep do
+      import ExCop.Police, only: [allow: 0, deny: 0, missing_policy: 0]
+
+      @behaviour ExCop.Police
+    end
+  end
 
   @spec allow() :: :ok
   def allow(),

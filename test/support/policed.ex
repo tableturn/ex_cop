@@ -1,6 +1,6 @@
 defmodule ExCop.Test.Policed do
   @moduledoc false
-  use ExCop.Builder, target: ExCop.Test.Policed.Target
+  use ExCop.Policy, target: ExCop.Test.Policed.Target
 
   defmodule User do
     @moduledoc false

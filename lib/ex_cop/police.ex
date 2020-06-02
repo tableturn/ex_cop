@@ -1,4 +1,4 @@
-defmodule ExCop.Builder do
+defmodule ExCop.Policy do
   @moduledoc false
 
   defmodule Rule do
@@ -24,7 +24,7 @@ defmodule ExCop.Builder do
       alias unquote(Application.fetch_env!(:ex_cop, :user_module))
 
       import unquote(__MODULE__),
-        only: [allowance: 2, mutation_allowance: 2]
+        only: [allowance: 2, query_allowance: 2, mutation_allowance: 2]
 
       # Store the target for which the protocol will be implemented.
       @target unquote(target)
@@ -41,6 +41,18 @@ defmodule ExCop.Builder do
       import unquote(__MODULE__)
       # Prepare defaults in case the user function doesn't do anything.
       @rule %Rule{description: unquote(description)}
+      # Invoke the passed body.
+      unquote(body)
+      # Push a new rule into our accumulator.
+      @rules @rule
+    end
+  end
+
+  defmacro query_allowance(description, do: body) do
+    quote location: :keep do
+      import unquote(__MODULE__)
+      # Prepare defaults in case the user function doesn't do anything.
+      @rule %Rule{description: unquote(description), parent_matches: [:query]}
       # Invoke the passed body.
       unquote(body)
       # Push a new rule into our accumulator.
@@ -148,7 +160,7 @@ defmodule ExCop.Builder do
               _ = var!(ctx)
               _ = var!(args)
 
-              (unquote(check_fn) && allow()) || deny()
+              (unquote(check_fn) && ExCop.Police.allow()) || ExCop.Police.deny()
             end
           end
         else
@@ -163,26 +175,24 @@ defmodule ExCop.Builder do
                   unquote(args_match_ast)
                 )
                 when unquote(combined_guards) do
-              allow()
+              ExCop.Police.allow()
             end
           end
         end
       end
 
     quote location: :keep do
-      import ExCop.Policy, only: [allow: 0, deny: 0]
-
       defimpl ExCop.Policy.Protocol, for: unquote(target) do
         # Always allow IDs to be accessed.
         def can?(_subject, _user, _parent, :id, _ctx, _args),
-          do: allow()
+          do: ExCop.Police.allow()
 
         # Add our list of rules.
         unquote(ast)
 
         # Fallback - deny.
         def can?(_subject, _user, _parent, _field, _ctx, _args),
-          do: deny()
+          do: ExCop.Police.deny()
       end
     end
   end

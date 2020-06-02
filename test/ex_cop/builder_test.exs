@@ -1,4 +1,4 @@
-defmodule ExCop.BuilderTest do
+defmodule ExCop.PolicyTest do
   use ExCop.Case, async: true
   alias ExCop.Policy.Protocol
   alias ExCop.Test.Policed.{Target, User}
