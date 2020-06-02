@@ -82,7 +82,7 @@ If you're using Absinthe and want to control what is happening at the root of yo
 implement a policy such as this one:
 
 ```
-defmodule TTAPI.Policy.Root do
+defmodule MyApp.RootPolicy do
   @moduledoc false
   use ExCop.Policy, target: Map
 
