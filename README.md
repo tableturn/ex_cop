@@ -84,23 +84,23 @@ implement a policy such as this one:
 ```
 defmodule TTAPI.Policy.Root do
   @moduledoc false
-  use ExCop.Builder, target: Map
+  use ExCop.Policy, target: Map
 
-  # This is a shortcut to calling `allowance` with `parent :query`.
-  query_allowance "users can access certain queries" do
+  allowance "users can access certain queries" do
     requires_logged_in_user()
+    parent :query
     field_in [:me, :users, :onboards, :documents]
   end
 
-  # This is a shortcut to calling `allowance` with `parent :mutation`.
-  mutation_allowance "guests can create new users and authenticate" do
+  allowance "guests can create new users and authenticate" do
     requires_guest_user()
+    parent :mutation
     field_in [:create_user, :authenticate]
   end
 end
 ```
 
-Policies are compiled into Elixir. A module will be created conforming to the `ExCop.Policy.Protocol` and
+Policies are compiled into Elixir. A module will be created conforming to the `ExCop.Policy` and
 declaring a series of `can?/6` functions, one per `policy` you called.
 
 At runtime, policies are evaluated from top to bottom - so it might be a good idea to keep the most used ones
@@ -131,7 +131,7 @@ To check for a policy, you can do something like this:
 ```elixir
 defmodule MyApp.Police do
   def check(source, user, parent, field, context, args),
-    do: source |> ExCop.Policy.Protocol.can?(user, parent, field, context, args)
+    do: source |> ExCop.Policy.can?(user, parent, field, context, args)
 end
 ```
 

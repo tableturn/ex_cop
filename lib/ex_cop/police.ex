@@ -1,4 +1,4 @@
-defmodule ExCop.Builder do
+defmodule ExCop.Policy do
   @moduledoc false
 
   defmodule Rule do
@@ -160,7 +160,7 @@ defmodule ExCop.Builder do
               _ = var!(ctx)
               _ = var!(args)
 
-              (unquote(check_fn) && allow()) || deny()
+              (unquote(check_fn) && ExCop.Police.allow()) || ExCop.Police.deny()
             end
           end
         else
@@ -175,26 +175,24 @@ defmodule ExCop.Builder do
                   unquote(args_match_ast)
                 )
                 when unquote(combined_guards) do
-              allow()
+              ExCop.Police.allow()
             end
           end
         end
       end
 
     quote location: :keep do
-      import ExCop.Policy, only: [allow: 0, deny: 0]
-
       defimpl ExCop.Policy.Protocol, for: unquote(target) do
         # Always allow IDs to be accessed.
         def can?(_subject, _user, _parent, :id, _ctx, _args),
-          do: allow()
+          do: ExCop.Police.allow()
 
         # Add our list of rules.
         unquote(ast)
 
         # Fallback - deny.
         def can?(_subject, _user, _parent, _field, _ctx, _args),
-          do: deny()
+          do: ExCop.Police.deny()
       end
     end
   end
