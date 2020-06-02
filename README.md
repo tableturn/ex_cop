@@ -40,36 +40,62 @@ defmodule MyApp.PostPolicy do
   alias MyApp.{Post, User}
   use ExCop, target: Post
 
-  policy "guest users can see a post title and body of valid posts" do
-    subject %Post{valid: true}
+  allowance "all users can see a post title and body if it's valid" do
+    # We require that the `%Post{}` subject has a field `valid` set to `true`.
+    subject %{valid: true}
     field_in [:title, :body]
   end
 
-  policy "logged-in users can see the author of a post" do
+  allowance "logged-in users can see the author of a post" do
     requires_logged_in_user()
     field :author
   end
 
-  policy "users can see everything on posts they are assigned to" do
-    subject %Post{assigned_user_id: user_id}
+  allowance "users can see everything on posts they authored" do
+    subject %{author_id: user_id}
     user %User{id: user_id}
   end
 
-  policy "posts with less than three comments can be seen by logged-in users" do
-    subject %Post{comment_count: count}
+  allowance "posts with less than three comments can be seen by logged-in users" do
+    # Here, we 
+    subject %{comment_count: count}
+    # This is a shortcut to `user %User{}`.
     requires_logged_in_user()
     guard count < 3
   end
 
-  policy "allows something after checking something else" do
-    subject %Post{must_check: true}
+  allowance "allows CIA users to see everything on posts for area 51" do
+    subject %{cia_post: true, mission: mission}
     check do
-      user.id == "secret agent" || subject.chain_id =~ "123"
+      String.downcase(user.agency) == "cia" && mission =~ "area 51"
     end
   end
 
-  policy "administrators can see everything in a post" do
+  allowance "administrators can see everything in a post" do
+    # This is a shortcut to `user %User{is_admin: true}`.
     requires_admin_user()
+  end
+end
+```
+
+If you're using Absinthe and want to control what is happening at the root of your schema, you'll have to
+implement a policy such as this one:
+
+```
+defmodule TTAPI.Policy.Root do
+  @moduledoc false
+  use ExCop.Builder, target: Map
+
+  # This is a shortcut to calling `allowance` with `parent :query`.
+  query_allowance "users can access certain queries" do
+    requires_logged_in_user()
+    field_in [:me, :users, :onboards, :documents]
+  end
+
+  # This is a shortcut to calling `allowance` with `parent :mutation`.
+  mutation_allowance "guests can create new users and authenticate" do
+    requires_guest_user()
+    field_in [:create_user, :authenticate]
   end
 end
 ```
@@ -107,4 +133,17 @@ defmodule MyApp.Police do
   def check(source, user, parent, field, context, args),
     do: source |> ExCop.Policy.Protocol.can?(user, parent, field, context, args)
 end
+```
+
+## Loading Subjects
+
+For certain policies, you want to make sure that the subject is loaded before the policies are ran. In the
+case of Absinthe, it means that you might want to have your `subject` loaded before your authorization layer
+kicks-in.
+
+You can accomplish this by doing something like this:
+
+In your 
+```
+
 ```
