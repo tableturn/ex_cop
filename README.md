@@ -57,7 +57,7 @@ defmodule MyApp.PostPolicy do
   end
 
   allowance "posts with less than three comments can be seen by logged-in users" do
-    # Here, we 
+    # Here, we guard against the shape of a particular subject, and later use that binding.
     subject %{comment_count: count}
     # This is a shortcut to `user %User{}`.
     requires_logged_in_user()
