@@ -12,7 +12,7 @@ defmodule ExCop.Police do
 
   def __using__(_opts \\ []) do
     quote location: :keep do
-      import ExCop.Police, only: [allow: 0, deny: 0, missing_policy: 0]
+      import ExCop.Police, only: [allow: 0, deny: 0]
 
       @behaviour ExCop.Police
     end

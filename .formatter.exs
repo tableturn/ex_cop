@@ -6,6 +6,7 @@
     ".iex.exs"
   ],
   locals_without_parens: [
+    delegated: :*,
     subject: :*,
     user: :*,
     parent: :*,

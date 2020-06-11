@@ -87,7 +87,7 @@ defmodule ExCop.Policy do
             args_matches: args_matches,
             guards: guards,
             check_fn: check_fn
-          } <- rules do
+          } <- rules |> Enum.reverse() do
         # Combine all guards.
         combined_guards =
           guards
@@ -160,7 +160,7 @@ defmodule ExCop.Policy do
               _ = var!(ctx)
               _ = var!(args)
 
-              (unquote(check_fn) && ExCop.Police.allow()) || ExCop.Police.deny()
+              unquote(check_fn)
             end
           end
         else
@@ -263,25 +263,44 @@ defmodule ExCop.Policy do
 
   defmacro check(do: body) do
     quote location: :keep do
+      import ExCop.Police, only: [allow: 0, deny: 0]
+
       @rule @rule |> Map.put(:check_fn, unquote(Macro.escape(body)))
     end
   end
 
   defmacro requires_guest_user() do
     quote location: :keep do
-      user(nil)
+      user nil
     end
   end
 
   defmacro requires_logged_in_user() do
     quote location: :keep do
-      user(%unquote(Application.fetch_env!(:ex_cop, :user_module)){})
+      user %unquote(Application.fetch_env!(:ex_cop, :user_module)){}
     end
   end
 
   defmacro requires_admin_user() do
     quote location: :keep do
-      user(%unquote(Application.fetch_env!(:ex_cop, :user_module)){is_admin: true})
+      user %unquote(Application.fetch_env!(:ex_cop, :user_module)){is_admin: true}
+    end
+  end
+
+  defmacro delegated() do
+    quote location: :keep do
+      context %{fetched: %{subject: subject}}
+
+      check do
+        subject
+        |> ExCop.Policy.Protocol.can?(
+          var!(user),
+          var!(parent),
+          var!(field),
+          var!(ctx),
+          var!(args)
+        )
+      end
     end
   end
 end
