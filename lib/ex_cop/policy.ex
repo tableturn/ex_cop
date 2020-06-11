@@ -1,4 +1,7 @@
 defmodule ExCop.Police do
+  @moduledoc false
+  alias ExCop.Policy.Protocol
+
   @type subject :: any
   @type user :: Protocol.user()
   @type parent :: Protocol.parent()
