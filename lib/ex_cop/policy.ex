@@ -13,9 +13,10 @@ defmodule ExCop.Police do
 
   @callback check(subject, user, parent, field, context, args) :: response
 
+  @spec __using__(any) :: term
   def __using__(_opts \\ []) do
     quote location: :keep do
-      import ExCop.Police, only: [allow: 0, deny: 0]
+      import ExCop.Police, only: [allow: 0, deny: 0, deny: 1]
 
       @behaviour ExCop.Police
     end

@@ -263,7 +263,7 @@ defmodule ExCop.Policy do
 
   defmacro check(do: body) do
     quote location: :keep do
-      import ExCop.Police, only: [allow: 0, deny: 0]
+      import ExCop.Police, only: [allow: 0, deny: 0, deny: 1]
 
       @rule @rule |> Map.put(:check_fn, unquote(Macro.escape(body)))
     end
