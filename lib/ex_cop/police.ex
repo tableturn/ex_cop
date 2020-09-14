@@ -36,6 +36,12 @@ defmodule ExCop.Policy do
     end
   end
 
+  defmacro before(do: body) do
+    quote location: :keep do
+      @before unquote(Macro.escape(body))
+    end
+  end
+
   defmacro allowance(description, do: body) do
     quote location: :keep do
       import unquote(__MODULE__)
@@ -183,9 +189,9 @@ defmodule ExCop.Policy do
 
     quote location: :keep do
       defimpl ExCop.Policy.Protocol, for: unquote(target) do
-        # Always allow IDs to be accessed.
-        def can?(_subject, _user, _parent, :id, _ctx, _args),
-          do: ExCop.Police.allow()
+        def before(subject, user, parent, field, ctx, args) do
+          unquote(@before)
+        end
 
         # Add our list of rules.
         unquote(ast)
