@@ -29,6 +29,7 @@ defmodule ExCop.Policy do
       # Store the target for which the protocol will be implemented.
       @target unquote(target)
       # Prepare a stack of rules to unwrap later into functions.
+      Module.register_attribute(__MODULE__, :before, accumulate: false, persist: false)
       Module.register_attribute(__MODULE__, :rules, accumulate: true, persist: false)
       Module.register_attribute(__MODULE__, :rule, accumulate: false, persist: false)
       # Schedule unwrapping rules.
