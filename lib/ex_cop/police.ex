@@ -82,6 +82,7 @@ defmodule ExCop.Policy do
   defmacro __before_compile__(env) do
     target = env.module |> Module.get_attribute(:target)
     rules = env.module |> Module.get_attribute(:rules)
+    before_ast = env.module |> Module.get_attribute(:before)
 
     ast =
       for %{
@@ -191,7 +192,7 @@ defmodule ExCop.Policy do
     quote location: :keep do
       defimpl ExCop.Policy.Protocol, for: unquote(target) do
         def before(subject, user, parent, field, ctx, args) do
-          unquote(@before)
+          unquote(before_ast)
         end
 
         # Add our list of rules.
