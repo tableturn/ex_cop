@@ -159,7 +159,7 @@ To check for a policy, you can do something like this:
 ```elixir
 defmodule MyApp.Police do
   def check(source, user, parent, field, context, args),
-    do: source |> ExCop.Policy.can?(user, parent, field, context, args)
+    do: source |> ExCop.Policy.enforce(user, parent, field, context, args)
 end
 ```
 

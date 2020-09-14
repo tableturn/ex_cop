@@ -22,6 +22,10 @@ defmodule ExCop.Police do
     end
   end
 
+  @spec can?(subject, user, parent, field, context, args) :: response
+  def can?(source, user, parent, field, ctx, args),
+    do: apply(&Protocol.can?/6, Protocol.before(source, user, parent, field, ctx, args))
+
   @spec allow() :: :ok
   def allow(),
     do: :ok
