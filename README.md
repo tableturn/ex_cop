@@ -157,10 +157,7 @@ If you decide to use the `check` function, be mindful of the following:
 To check for a policy, you can do something like this:
 
 ```elixir
-defmodule MyApp.Police do
-  def check(source, user, parent, field, context, args),
-    do: source |> ExCop.Policy.can?(user, parent, field, context, args)
-end
+source |> ExCop.Police.check(user, parent, field, context, args)
 ```
 
 ## Loading Subjects
