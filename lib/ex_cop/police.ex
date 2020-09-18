@@ -20,8 +20,10 @@ defmodule ExCop.Police do
     end
   end
 
-  def check(source, user, parent, field, ctx, args),
-    do: Protocol.can?(source, user, parent, field, ctx, args)
+  def check(source, user, parent, field, ctx, args) do
+    post = Protocol.before(source, user, parent, field, ctx, args) |> Tuple.to_list()
+    apply(&Protocol.can?/6, post)
+  end
 
   @spec allow() :: :ok
   def allow(),

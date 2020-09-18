@@ -12,6 +12,14 @@ defmodule ExCop.PolicyTest do
     end
   end
 
+  describe "before" do
+    test "catches changes before running the policy" do
+      %Post{name: "before"}
+      |> Police.check(nil, nil, nil, %{}, %{})
+      |> assert_equal(:ok)
+    end
+  end
+
   describe "subject constraints" do
     # Test on matching subject fields.
     test "matches" do

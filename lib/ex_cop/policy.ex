@@ -13,7 +13,7 @@ defmodule ExCop.Policy do
               context_matches: [],
               args_matches: [],
               guards: [],
-              check_fn: nil
+              check_body: nil
   end
 
   defmacro __using__(opts) do
@@ -24,11 +24,12 @@ defmodule ExCop.Policy do
       alias unquote(Application.fetch_env!(:ex_cop, :user_module))
 
       import unquote(__MODULE__),
-        only: [allowance: 2, query_allowance: 2, mutation_allowance: 2]
+        only: [before: 1, allowance: 2, query_allowance: 2, mutation_allowance: 2]
 
       # Store the target for which the protocol will be implemented.
       @target unquote(target)
       # Prepare a stack of rules to unwrap later into functions.
+      Module.register_attribute(__MODULE__, :before_fn, accumulate: false, persist: false)
       Module.register_attribute(__MODULE__, :rules, accumulate: true, persist: false)
       Module.register_attribute(__MODULE__, :rule, accumulate: false, persist: false)
       # Schedule unwrapping rules.
@@ -72,9 +73,16 @@ defmodule ExCop.Policy do
     end
   end
 
+  defmacro before(do: body) do
+    quote location: :keep do
+      @before_body unquote(Macro.escape(body))
+    end
+  end
+
   defmacro __before_compile__(env) do
     target = env.module |> Module.get_attribute(:target)
     rules = env.module |> Module.get_attribute(:rules)
+    before_body = env.module |> Module.get_attribute(:before_body)
 
     ast =
       for %{
@@ -86,7 +94,7 @@ defmodule ExCop.Policy do
             context_matches: context_matches,
             args_matches: args_matches,
             guards: guards,
-            check_fn: check_fn
+            check_body: check_body
           } <- rules |> Enum.reverse() do
         # Combine all guards.
         combined_guards =
@@ -153,19 +161,37 @@ defmodule ExCop.Policy do
               )
               when unquote(combined_guards) do
             _ = [var!(subject), var!(user), var!(parent), var!(field), var!(ctx), var!(args)]
-            unquote(check_fn || ExCop.Police.allow())
+            unquote(check_body || ExCop.Police.allow())
           end
         end
       end
 
     quote location: :keep do
       defimpl ExCop.Policy.Protocol, for: unquote(target) do
+        # Before function.
+        def before(var!(subject), var!(user), var!(parent), var!(field), var!(ctx), var!(args)) do
+          unquote(
+            before_body ||
+              quote(
+                do: {
+                  var!(subject),
+                  var!(user),
+                  var!(parent),
+                  var!(field),
+                  var!(ctx),
+                  var!(args)
+                }
+              )
+          )
+        end
+
         # Add our list of rules.
         unquote(ast)
 
         # Fallback - deny.
-        def can?(_subject, _user, _parent, _field, _ctx, _args),
-          do: ExCop.Police.deny()
+        def can?(_source, _user, _parent, _field, _ctx, _args) do
+          ExCop.Police.deny()
+        end
       end
     end
   end
@@ -238,7 +264,7 @@ defmodule ExCop.Policy do
     quote location: :keep do
       import ExCop.Police, only: [allow: 0, deny: 0, deny: 1]
 
-      @rule @rule |> Map.put(:check_fn, unquote(Macro.escape(body)))
+      @rule @rule |> Map.put(:check_body, unquote(Macro.escape(body)))
     end
   end
 

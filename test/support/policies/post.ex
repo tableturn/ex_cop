@@ -3,6 +3,17 @@ defmodule ExCop.Test.Policies.Post do
   use ExCop.Policy, target: ExCop.Test.Fixtures.Post
   alias ExCop.Test.Fixtures.User
 
+  before do
+    case subject do
+      %{name: "before"} -> {%{subject | name: "after"}, user, parent, field, ctx, args}
+      _ -> {subject, user, parent, field, ctx, args}
+    end
+  end
+
+  allowance "before" do
+    subject %Post{name: "after"}
+  end
+
   allowance "subject" do
     subject %Post{name: "subject"}
   end
