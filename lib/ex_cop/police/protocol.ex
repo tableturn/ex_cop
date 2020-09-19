@@ -22,25 +22,19 @@ end
 defimpl ExCop.Policy.Protocol, for: Any do
   alias ExCop.Policy.Protocol
 
-  @spec before(
-          any,
-          Protocol.user(),
-          Protocol.parent(),
-          Protocol.field(),
-          Protocol.context(),
-          Protocol.args()
-        ) :: Protocol.everything()
+  @type user :: Protocol.user()
+  @type parent :: Protocol.parent()
+  @type field :: Protocol.field()
+  @type context :: Protocol.context()
+  @type args :: Protocol.args()
+  @type everything :: Protocol.everything()
+  @type error_response :: Protocol.error_response()
+
+  @spec before(any, user(), parent(), field(), context(), args()) :: everything()
   def before(source, user, parent, field, ctx, args),
     do: {source, user, parent, field, ctx, args}
 
-  @spec can?(
-          any,
-          Protocol.user(),
-          Protocol.parent(),
-          Protocol.field(),
-          Protocol.context(),
-          Protocol.args()
-        ) :: {:error, :missing_policy}
+  @spec can?(any, user(), parent(), field(), context(), args()) :: error_response
   def can?(_source, _user, _parent, _field, _ctx, _args),
     do: ExCop.Police.missing_policy()
 end
