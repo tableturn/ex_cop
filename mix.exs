@@ -16,7 +16,7 @@ defmodule ExCop.MixProject do
       compilers: [] ++ Mix.compilers(),
       dialyzer: [
         plt_add_deps: :transitive,
-        plt_add_apps: [:mix, :ecto]
+        plt_add_apps: [:mix]
       ],
       test_coverage: [tool: ExCoveralls],
       preferred_cli_env:
@@ -52,5 +52,9 @@ defmodule ExCop.MixProject do
     do: ["lib"]
 
   defp deps(),
-    do: [{:ex_doc, ">= 0.0.0", only: :dev, runtime: false}]
+    # Dev / Test only.
+    do: [
+      {:dialyxir, "~> 1.0", only: :dev, runtime: false},
+      {:ex_doc, ">= 0.0.0", only: :dev, runtime: false}
+    ]
 end
