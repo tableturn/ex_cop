@@ -37,6 +37,11 @@ defmodule ExCop.Test.Policies.Post do
     requires_admin_user()
   end
 
+  allowance "reason" do
+    subject %Post{name: "reason"}
+    check do: ExCop.Police.allow(:reason)
+  end
+
   allowance "parent" do
     parent :single
   end

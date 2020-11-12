@@ -14,7 +14,7 @@ defmodule ExCop.Police do
   @spec __using__(any) :: term
   def __using__(_opts \\ []) do
     quote location: :keep do
-      import ExCop.Police, only: [allow: 0, deny: 0, deny: 1]
+      import ExCop.Police, only: [allow: 0, allow: 1, deny: 0, deny: 1]
 
       @behaviour ExCop.Police
     end
@@ -25,9 +25,14 @@ defmodule ExCop.Police do
     apply(&Protocol.can?/6, post)
   end
 
-  @spec allow() :: :ok
-  def allow(),
+  @spec allow(any) :: :ok | {:ok, any}
+  def allow(reason \\ nil)
+
+  def allow(nil),
     do: :ok
+
+  def allow(reason),
+    do: {:ok, reason}
 
   @spec deny(String.t() | nil) :: Protocol.error_response()
   def deny(reason \\ nil)

@@ -8,7 +8,7 @@ defprotocol ExCop.Policy.Protocol do
   @type args :: map
   @type everything :: {any, user, parent, field, context, args}
   @type error_response :: {:error, atom} | {:error, atom, String.t()}
-  @type response :: :ok | error_response
+  @type response :: :ok | {:ok, any} | error_response
 
   @spec before(any, user, parent, field, context, args) :: everything
   def before(source, user, parent, field, ctx, args)

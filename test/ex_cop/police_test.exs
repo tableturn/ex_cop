@@ -89,6 +89,14 @@ defmodule ExCop.PolicyTest do
     end
   end
 
+  describe "reason" do
+    test "allows to return a reason for allowing" do
+      %Post{name: "reason"}
+      |> Police.check(nil, nil, nil, %{}, %{})
+      |> assert_equal({:ok, :reason})
+    end
+  end
+
   describe "parent" do
     test "matches a single value" do
       # Tests that specification on a single parent can match.
