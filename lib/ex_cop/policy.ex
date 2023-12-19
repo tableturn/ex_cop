@@ -13,7 +13,7 @@ defmodule ExCop.Policy do
               context_matches: [],
               args_matches: [],
               guards: [],
-              check_body: nil
+              checks: []
   end
 
   defmacro __using__(opts) do
@@ -94,7 +94,7 @@ defmodule ExCop.Policy do
             context_matches: context_matches,
             args_matches: args_matches,
             guards: guards,
-            check_body: check_body
+            checks: checks
           } <- rules |> Enum.reverse() do
         # Combine all guards.
         combined_guards =
@@ -161,7 +161,28 @@ defmodule ExCop.Policy do
               )
               when unquote(combined_guards) do
             _ = [var!(subject), var!(user), var!(parent), var!(field), var!(ctx), var!(args)]
-            unquote(check_body || ExCop.Police.allow())
+
+            # TODO: Help needed!
+            # Somehow, `unquote(checks)` runs them all, instead of just
+            # building a list of each check block AST to be ran lazily...
+            unquote(checks)
+            # As long as checks return :ok or an {:ok, ...} tuple, we keep going.
+            |> Enum.reduce_while([], fn check, acc ->
+              check
+              |> case do
+                :ok -> {:cont, acc}
+                {:ok, reason} -> {:cont, [reason | acc]}
+                {:error, :unauthorized} = err -> {:halt, err}
+                {:error, :unauthorized, _reason} = err -> {:halt, err}
+              end
+            end)
+            |> case do
+              [] -> :ok
+              [reason] -> {:ok, reason}
+              [_ | _] = reasons -> {:ok, reasons: reasons}
+              {:error, :unauthorized} = err -> err
+              {:error, :unauthorized, _reason} = err -> err
+            end
           end
         end
       end
@@ -264,7 +285,7 @@ defmodule ExCop.Policy do
     quote location: :keep do
       import ExCop.Police, only: [allow: 0, allow: 1, deny: 0, deny: 1]
 
-      @rule @rule |> Map.put(:check_body, unquote(Macro.escape(body)))
+      @rule @rule |> Map.put(:checks, @rule.checks ++ [unquote(Macro.escape(body))])
     end
   end
 

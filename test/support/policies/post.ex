@@ -90,9 +90,23 @@ defmodule ExCop.Test.Policies.Post do
     guard is_admin == true
   end
 
-  allowance "check" do
-    subject %Post{name: "check"}
+  allowance "single check" do
+    subject %Post{name: "single check"}
     check do: (subject.id == "pass!" && allow()) || deny()
+  end
+
+  allowance "multiple checks" do
+    subject %Post{name: "multiple checks"}
+    user %User{id: user_id}
+    check do: (user_id == "pass!" && allow()) || deny()
+    check do: (subject.id == "pass!" && allow()) || deny()
+  end
+
+  allowance "multiple checks with reasons" do
+    subject %Post{name: "multiple checks with reasons"}
+    user %User{id: user_id}
+    check do: (user_id == "pass!" && allow(:valid_user)) || deny(:invalid_user)
+    check do: (subject.id == "pass!" && allow(:valid_subject)) || deny(:invalid_subject)
   end
 
   mutation_allowance "mutation_allowance" do

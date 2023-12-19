@@ -199,15 +199,67 @@ defmodule ExCop.PolicyTest do
     end
   end
 
-  describe "check" do
+  describe "single check" do
     test "runs the function" do
-      %Post{id: "fail!", name: "check"}
+      %Post{id: "fail!", name: "single check"}
       |> Police.check(nil, nil, nil, %{}, %{})
       |> assert_match({:error, :unauthorized})
 
-      %Post{id: "pass!", name: "check"}
+      %Post{id: "pass!", name: "single check"}
       |> Police.check(nil, nil, nil, %{}, %{})
       |> assert_equal(:ok)
+    end
+  end
+
+  describe "multiple checks" do
+    test "with first failing should fail" do
+      %Post{id: "fail!", name: "multiple checks"}
+      |> Police.check(%User{id: "pass!"}, nil, nil, %{}, %{})
+      |> assert_match({:error, :unauthorized})
+    end
+
+    test "with second failing should fail" do
+      %Post{id: "pass!", name: "multiple checks"}
+      |> Police.check(%User{id: "fail!"}, nil, nil, %{}, %{})
+      |> assert_match({:error, :unauthorized})
+    end
+
+    test "with both failing should fail" do
+      %Post{id: "fail!", name: "multiple checks"}
+      |> Police.check(%User{id: "fail!"}, nil, nil, %{}, %{})
+      |> assert_match({:error, :unauthorized})
+    end
+
+    test "with both passing should pass" do
+      %Post{id: "pass!", name: "multiple checks"}
+      |> Police.check(%User{id: "pass!"}, nil, nil, %{}, %{})
+      |> assert_match(:ok)
+    end
+  end
+
+  describe "multiple checks with reasons" do
+    test "with first failing should fail" do
+      %Post{id: "fail!", name: "multiple checks with reasons"}
+      |> Police.check(%User{id: "pass!"}, nil, nil, %{}, %{})
+      |> assert_match({:error, :unauthorized, :invalid_subject})
+    end
+
+    test "with second failing should fail" do
+      %Post{id: "pass!", name: "multiple checks with reasons"}
+      |> Police.check(%User{id: "fail!"}, nil, nil, %{}, %{})
+      |> assert_match({:error, :unauthorized, :invalid_user})
+    end
+
+    test "with both failing should fail" do
+      %Post{id: "fail!", name: "multiple checks with reasons"}
+      |> Police.check(%User{id: "fail!"}, nil, nil, %{}, %{})
+      |> assert_match({:error, :unauthorized, :invalid_user})
+    end
+
+    test "with both passing should pass" do
+      %Post{id: "pass!", name: "multiple checks with reasons"}
+      |> Police.check(%User{id: "pass!"}, nil, nil, %{}, %{})
+      |> assert_match({:ok, reasons: [:valid_subject, :valid_user]})
     end
   end
 

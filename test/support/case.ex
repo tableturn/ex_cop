@@ -31,11 +31,11 @@ defmodule ExCop.Case do
         # Return result of left expression, in case the user is pipping to something else.
         left_res
       else
-        flunk """
+        flunk("""
         Terms are not equal:
         #{IO.ANSI.cyan()}left:#{IO.ANSI.reset()} #{inspect(left_res)}
         #{IO.ANSI.cyan()}right:#{IO.ANSI.reset()} #{inspect(right_res)}
-        """
+        """)
       end
     end
   end
