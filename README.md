@@ -23,22 +23,121 @@ be found at [https://hexdocs.pm/ex_cop](https://hexdocs.pm/ex_cop).
 
 ## Configuration
 
-Once installed, you must tell ExCop which one is your user module. You do that in your configuration by adding
-something like:
+You probably want to declare a `Police` module that looks like this:
 
 ```elixir
-config :ex_cop,
-  user_module: MyApp.User
+defmodule MyApp.Police do
+  @moduledoc false
+  alias ExCop.Policy.Protocol
+  import ExCop.Police, only: [allow: 0]
+
+  @type user :: Protocol.user()
+  @type error_response :: Protocol.error_response()
+  @type response :: Protocol.response()
+  @type parent :: Protocol.parent()
+  @type field :: Protocol.field()
+  @type context :: Protocol.context()
+  @type args :: Protocol.args()
+
+  @allowed_parents [
+    :__schema,
+    :__directive,
+    :__type,
+    :__inputvalue,
+    :__field,
+    :__enumvalue,
+    :page_info,
+    :edges
+  ]
+
+  @allowed_fields [
+    :__typename,
+    :__schema,
+    :id,
+    :node,
+    :nodes,
+    :edges,
+    :cursor,
+    :page_info
+  ]
+
+  @spec check(any, user, parent, field, context, args) :: response()
+  def check(_source, _user, parent, field, _ctx, _args)
+      when parent in @allowed_parents or field in @allowed_fields,
+      do: allow()
+
+  def check(source, user, parent, field, ctx, args) do
+    parent
+    |> to_string
+    |> String.ends_with?("_payload")
+    |> case do
+      true -> allow()
+      _ -> source |> ExCop.Police.check(user, parent, field, ctx, args)
+    end
+  end
+
+  defmodule Helpers do
+    @moduledoc false
+
+    defmacro object_allowance(title, do: block) do
+      quote do
+        allowance unquote(title) do
+          unquote(block)
+          guard var!(parent) not in [:query, :mutation, :subscription]
+        end
+      end
+    end
+
+    # A macro that requires a user as the current persona.
+    defmacro requires_logged_in_user() do
+      quote do
+        persona %User{}
+      end
+    end
+
+    # A macro that requires an admin user as the current persona.
+    defmacro requires_admin_user() do
+      quote do
+        persona %User{is_admin: true}
+      end
+    end
+
+    # A macro that requires that the current persona is `nil` - some guest systems do that.
+    defmacro requires_guest_user() do
+      quote do
+        persona nil
+      end
+    end
+  end
+end
 ```
+
+Then you could have a `Policy` module defined such as:
+
+```elixir
+defmodule MyApp.Policy do
+  @moduledoc false
+
+  defmacro __using__(opts) do
+    quote do
+      use ExCop.Policy, unquote(opts)
+      alias MyApp.Schema.Accounts.{User, Session}
+      import MyApp.Police.Helpers
+    end
+  end
+end
+```
+
+This way, all the macro you've defined in MyApp.Police.Helpers would become available to your policies when they `use MyApp.Policy, target: Something`.
 
 ## Policy System
 
-To write a policy, simply create a module looking like something like the following:
+To write a policy, simply create a module looking like the following:
 
 ```elixir
 defmodule MyApp.PostPolicy do
   alias MyApp.{Post, User}
-  use ExCop, target: Post
+  use MyApp.Policy, target: Post
 
   allowance "all users can see a post title and body if it's valid" do
     # We require that the `%Post{}` subject has a field `valid` set to `true`.
@@ -46,33 +145,32 @@ defmodule MyApp.PostPolicy do
     field_in [:title, :body]
   end
 
-  allowance "logged-in users can see the author of a post" do
+  allowance "users can see the author of a post" do
+    # Equivalent to `persona %User{}`...
     requires_logged_in_user()
     field :author
   end
 
   allowance "users can see everything on posts they authored" do
+    persona %User{id: user_id}
     subject %{author_id: user_id}
-    user %User{id: user_id}
   end
 
-  allowance "posts with less than three comments can be seen by logged-in users" do
+  allowance "posts with less than three comments can be seen by users" do
     # Here, we guard against the shape of a particular subject, and later use that binding.
-    subject %{comment_count: count}
-    # This is a shortcut to `user %User{}`.
     requires_logged_in_user()
+    subject %{comment_count: count}
     guard count < 3
   end
 
   allowance "allows CIA users to see everything on posts for area 51" do
     subject %{cia_post: true, mission: mission}
     check do
-      String.downcase(user.agency) == "cia" && mission =~ "area 51"
+      String.downcase(persona.agency) == "cia" && mission =~ "area 51"
     end
   end
 
   allowance "administrators can see everything in a post" do
-    # This is a shortcut to `user %User{is_admin: true}`.
     requires_admin_user()
   end
 end
@@ -81,20 +179,20 @@ end
 If you're using Absinthe and want to control what is happening at the root of your schema, you'll have to
 implement a policy such as this one:
 
-```
+```elixir
 defmodule MyApp.RootPolicy do
   @moduledoc false
-  use ExCop.Policy, target: Map
+  use MyApp.Policy, target: Map
 
   # Shortcut to using `parent :query`.
   query_allowance "users can access certain queries" do
-    requires_logged_in_user()
+    persona %User{}
     field_in [:me, :users, :onboards, :documents]
   end
 
   # Shortcut to using `parent :mutation`.
   mutation_allowance "guests can create new users and authenticate" do
-    requires_guest_user()
+    persona nil
     field_in [:create_user, :authenticate]
   end
 end
@@ -105,10 +203,10 @@ end
 Another trick you can leverage while using ExCop is the policy delegation feature. Consider something like
 the following:
 
-```
+```elixir
 defmodule MyApp.RootPolicy do
   @moduledoc false
-  use ExCop.Policy, target: Map
+  use MyApp.Policy, target: Map
 
   # Shortcut to using `parent :query`.
   mutation_allowance "users can access certain queries" do

@@ -3,7 +3,7 @@ defmodule ExCop.Police do
   alias ExCop.Policy.Protocol
 
   @type subject :: any
-  @type user :: Protocol.user()
+  @type persona :: Protocol.persona()
   @type parent :: Protocol.parent()
   @type field :: Protocol.field()
   @type context :: Protocol.context()

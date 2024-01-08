@@ -8,7 +8,7 @@
   locals_without_parens: [
     delegated: :*,
     subject: :*,
-    user: :*,
+    persona: :*,
     parent: :*,
     parent_in: :*,
     field: :*,

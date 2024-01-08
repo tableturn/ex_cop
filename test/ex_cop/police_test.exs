@@ -29,61 +29,61 @@ defmodule ExCop.PolicyTest do
     end
   end
 
-  describe "user" do
-    # Test on matching on a user field.
-    test "matches a user constraint" do
+  describe "persona" do
+    # Test on matching on a persona field.
+    test "matches a persona constraint" do
       %Post{}
       |> Police.check(%User{id: "some specific id"}, nil, nil, %{}, %{})
       |> assert_equal(:ok)
     end
 
-    test "honours requires_guest_user" do
+    test "honours nil persona" do
       # Tests that a logged-in admin cannot access a guest-only policy.
-      %Post{name: "requires_guest_user"}
+      %Post{name: "nil persona"}
       |> Police.check(%User{is_admin: true}, nil, nil, %{}, %{})
       |> assert_match({:error, :unauthorized})
 
       # Tests that a logged-in user cannot access a guest-only policy.
-      %Post{name: "requires_guest_user"}
+      %Post{name: "nil persona"}
       |> Police.check(%User{}, nil, nil, %{}, %{})
       |> assert_match({:error, :unauthorized})
 
       # Tests that a guest can access a guest policy.
-      %Post{name: "requires_guest_user"}
+      %Post{name: "nil persona"}
       |> Police.check(nil, nil, nil, %{}, %{})
       |> assert_equal(:ok)
     end
 
-    test "honours requires_logged_in_user" do
+    test "honours non-nil persona" do
       # Tests that a guest cannot access a logged-in policy.
-      %Post{name: "requires_logged_in_user"}
+      %Post{name: "non-nil persona"}
       |> Police.check(nil, nil, nil, %{}, %{})
       |> assert_match({:error, :unauthorized})
 
       # Tests that a logged-in user can access a logged-in policy.
-      %Post{name: "requires_logged_in_user"}
+      %Post{name: "non-nil persona"}
       |> Police.check(%User{}, nil, nil, %{}, %{})
       |> assert_equal(:ok)
 
       # Tests that a logged-in admin user can access a logged-in policy.
-      %Post{name: "requires_logged_in_user"}
+      %Post{name: "non-nil persona"}
       |> Police.check(%User{is_admin: true}, nil, nil, %{}, %{})
       |> assert_equal(:ok)
     end
 
-    test "honours requires_admin_user" do
+    test "honours admin persona" do
       # Tests that a guest cannot access an admin-restricted policy.
-      %Post{name: "requires_admin_user"}
+      %Post{name: "admin persona"}
       |> Police.check(nil, nil, nil, %{}, %{})
       |> assert_match({:error, :unauthorized})
 
       # Tests that a logged-in user cannot access an admin-restricted policy.
-      %Post{name: "requires_admin_user"}
+      %Post{name: "admin persona"}
       |> Police.check(%User{}, nil, nil, %{}, %{})
       |> assert_match({:error, :unauthorized})
 
       # Tests that an admin can access an admin-restricted policy.
-      %Post{name: "requires_admin_user"}
+      %Post{name: "admin persona"}
       |> Police.check(%User{is_admin: true}, nil, nil, %{}, %{})
       |> assert_equal(:ok)
     end

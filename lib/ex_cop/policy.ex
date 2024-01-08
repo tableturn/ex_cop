@@ -7,7 +7,7 @@ defmodule ExCop.Policy do
     @type t :: %__MODULE__{}
     defstruct description: nil,
               subject_matches: [],
-              user_matches: [],
+              persona_matches: [],
               parent_matches: [],
               field_matches: [],
               context_matches: [],
@@ -21,7 +21,6 @@ defmodule ExCop.Policy do
 
     quote location: :keep do
       alias unquote(target)
-      alias unquote(Application.fetch_env!(:ex_cop, :user_module))
 
       import unquote(__MODULE__),
         only: [before: 1, allowance: 2, query_allowance: 2, mutation_allowance: 2]
@@ -40,7 +39,7 @@ defmodule ExCop.Policy do
   defmacro allowance(description, do: body) do
     quote location: :keep do
       import unquote(__MODULE__)
-      # Prepare defaults in case the user function doesn't do anything.
+      # Prepare defaults in case the persona function doesn't do anything.
       @rule %Rule{description: unquote(description)}
       # Invoke the passed body.
       unquote(body)
@@ -52,7 +51,7 @@ defmodule ExCop.Policy do
   defmacro query_allowance(description, do: body) do
     quote location: :keep do
       import unquote(__MODULE__)
-      # Prepare defaults in case the user function doesn't do anything.
+      # Prepare defaults in case the persona function doesn't do anything.
       @rule %Rule{description: unquote(description), parent_matches: [:query]}
       # Invoke the passed body.
       unquote(body)
@@ -64,7 +63,7 @@ defmodule ExCop.Policy do
   defmacro mutation_allowance(description, do: body) do
     quote location: :keep do
       import unquote(__MODULE__)
-      # Prepare defaults in case the user function doesn't do anything.
+      # Prepare defaults in case the persona function doesn't do anything.
       @rule %Rule{description: unquote(description), parent_matches: [:mutation]}
       # Invoke the passed body.
       unquote(body)
@@ -88,7 +87,7 @@ defmodule ExCop.Policy do
       for %{
             description: description,
             subject_matches: subject_matches,
-            user_matches: user_matches,
+            persona_matches: persona_matches,
             parent_matches: parent_matches,
             field_matches: field_matches,
             context_matches: context_matches,
@@ -109,15 +108,15 @@ defmodule ExCop.Policy do
             &quote(location: :keep, do: unquote(&2) = unquote(&1))
           )
 
-        # Combine all user patterns after a generic "user" one.
-        user_match_ast =
-          user_matches
+        # Combine all persona patterns after a generic "persona" one.
+        persona_match_ast =
+          persona_matches
           |> Enum.reduce(
-            quote(do: user),
+            quote(do: persona),
             &quote(location: :keep, do: unquote(&2) = unquote(&1))
           )
 
-        # Combine all user patterns after a generic "user" one.
+        # Combine all persona patterns after a generic "persona" one.
         parent_match_ast =
           parent_matches
           |> Enum.reduce(
@@ -125,7 +124,7 @@ defmodule ExCop.Policy do
             &quote(location: :keep, do: unquote(&2) = unquote(&1))
           )
 
-        # Combine all user patterns after a generic "field" one.
+        # Combine all persona patterns after a generic "field" one.
         field_match_ast =
           field_matches
           |> Enum.reduce(
@@ -133,7 +132,7 @@ defmodule ExCop.Policy do
             &quote(location: :keep, do: unquote(&2) = unquote(&1))
           )
 
-        # Combine all user patterns after a generic "field" one.
+        # Combine all persona patterns after a generic "field" one.
         context_match_ast =
           context_matches
           |> Enum.reduce(
@@ -141,7 +140,7 @@ defmodule ExCop.Policy do
             &quote(location: :keep, do: unquote(&2) = unquote(&1))
           )
 
-        # Combine all user patterns after a generic "field" one.
+        # Combine all persona patterns after a generic "field" one.
         args_match_ast =
           args_matches
           |> Enum.reduce(
@@ -153,14 +152,14 @@ defmodule ExCop.Policy do
           @doc unquote(description)
           def can?(
                 unquote(subject_match_ast) = var!(subject),
-                unquote(user_match_ast) = var!(user),
+                unquote(persona_match_ast) = var!(persona),
                 unquote(parent_match_ast) = var!(parent),
                 unquote(field_match_ast) = var!(field),
                 unquote(context_match_ast) = var!(ctx),
                 unquote(args_match_ast) = var!(args)
               )
               when unquote(combined_guards) do
-            _ = [var!(subject), var!(user), var!(parent), var!(field), var!(ctx), var!(args)]
+            _ = [var!(subject), var!(persona), var!(parent), var!(field), var!(ctx), var!(args)]
 
             # TODO: Help needed!
             # Somehow, `unquote(checks)` runs them all, instead of just
@@ -190,13 +189,13 @@ defmodule ExCop.Policy do
     quote location: :keep do
       defimpl ExCop.Policy.Protocol, for: unquote(target) do
         # Before function.
-        def before(var!(subject), var!(user), var!(parent), var!(field), var!(ctx), var!(args)) do
+        def before(var!(subject), var!(persona), var!(parent), var!(field), var!(ctx), var!(args)) do
           unquote(
             before_body ||
               quote(
                 do: {
                   var!(subject),
-                  var!(user),
+                  var!(persona),
                   var!(parent),
                   var!(field),
                   var!(ctx),
@@ -210,7 +209,7 @@ defmodule ExCop.Policy do
         unquote(ast)
 
         # Fallback - deny.
-        def can?(_source, _user, _parent, _field, _ctx, _args) do
+        def can?(_source, _persona, _parent, _field, _ctx, _args) do
           ExCop.Police.deny()
         end
       end
@@ -229,9 +228,9 @@ defmodule ExCop.Policy do
     end
   end
 
-  defmacro user(body) do
+  defmacro persona(body) do
     quote location: :keep do
-      @rule %{@rule | user_matches: @rule.user_matches ++ [unquote(Macro.escape(body))]}
+      @rule %{@rule | persona_matches: @rule.persona_matches ++ [unquote(Macro.escape(body))]}
     end
   end
 
@@ -289,32 +288,14 @@ defmodule ExCop.Policy do
     end
   end
 
-  defmacro requires_guest_user() do
-    quote location: :keep do
-      user nil
-    end
-  end
-
-  defmacro requires_logged_in_user() do
-    quote location: :keep do
-      user %unquote(Application.fetch_env!(:ex_cop, :user_module)){}
-    end
-  end
-
-  defmacro requires_admin_user() do
-    quote location: :keep do
-      user %unquote(Application.fetch_env!(:ex_cop, :user_module)){is_admin: true}
-    end
-  end
-
   defmacro delegated() do
     quote location: :keep do
-      context %{fetched: %{subject: subject}}
+      context(%{fetched: %{subject: subject}})
 
       check do
         subject
         |> ExCop.Police.check(
-          var!(user),
+          var!(persona),
           var!(parent),
           var!(field),
           var!(ctx),

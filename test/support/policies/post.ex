@@ -5,8 +5,8 @@ defmodule ExCop.Test.Policies.Post do
 
   before do
     case subject do
-      %{name: "before"} -> {%{subject | name: "after"}, user, parent, field, ctx, args}
-      _ -> {subject, user, parent, field, ctx, args}
+      %{name: "before"} -> {%{subject | name: "after"}, persona, parent, field, ctx, args}
+      _ -> {subject, persona, parent, field, ctx, args}
     end
   end
 
@@ -18,23 +18,23 @@ defmodule ExCop.Test.Policies.Post do
     subject %Post{name: "subject"}
   end
 
-  allowance "user" do
-    user %User{id: "some specific id"}
+  allowance "persona" do
+    persona %User{id: "some specific id"}
   end
 
   allowance "guest" do
-    subject %Post{name: "requires_guest_user"}
-    requires_guest_user()
+    subject %Post{name: "nil persona"}
+    persona nil
   end
 
   allowance "logged-in" do
-    subject %Post{name: "requires_logged_in_user"}
-    requires_logged_in_user()
+    subject %Post{name: "non-nil persona"}
+    persona %User{}
   end
 
   allowance "admin" do
-    subject %Post{name: "requires_admin_user"}
-    requires_admin_user()
+    subject %Post{name: "admin persona"}
+    persona %User{is_admin: true}
   end
 
   allowance "reason" do
@@ -70,12 +70,12 @@ defmodule ExCop.Test.Policies.Post do
 
   allowance "wildcard" do
     subject %Post{id: _, name: "wildcard"}
-    user %User{id: _}
+    persona %User{id: _}
   end
 
   allowance "guards" do
     subject %Post{id: id, name: name}
-    user %User{id: id, is_admin: is_admin}
+    persona %User{id: id, is_admin: is_admin}
     parent :parent
     field :field
     args %{something: :else}
@@ -84,7 +84,7 @@ defmodule ExCop.Test.Policies.Post do
 
   allowance "multiple guards" do
     subject %Post{name: name}
-    user %User{id: user_id, is_admin: is_admin}
+    persona %User{id: user_id, is_admin: is_admin}
     guard name == "multiple guards"
     guard user_id == "1"
     guard is_admin == true
@@ -97,14 +97,14 @@ defmodule ExCop.Test.Policies.Post do
 
   allowance "multiple checks" do
     subject %Post{name: "multiple checks"}
-    user %User{id: user_id}
+    persona %User{id: user_id}
     check do: (user_id == "pass!" && allow()) || deny()
     check do: (subject.id == "pass!" && allow()) || deny()
   end
 
   allowance "multiple checks with reasons" do
     subject %Post{name: "multiple checks with reasons"}
-    user %User{id: user_id}
+    persona %User{id: user_id}
     check do: (user_id == "pass!" && allow(:valid_user)) || deny(:invalid_user)
     check do: (subject.id == "pass!" && allow(:valid_subject)) || deny(:invalid_subject)
   end
@@ -114,7 +114,7 @@ defmodule ExCop.Test.Policies.Post do
   end
 
   allowance "delegated" do
-    user %User{id: "delegated"}
+    persona %User{id: "delegated"}
     subject %{name: "delegated"}
     parent :delegated_parent
     field :delegated_field
@@ -122,7 +122,7 @@ defmodule ExCop.Test.Policies.Post do
   end
 
   allowance "delegated query" do
-    user %User{id: "delegated"}
+    persona %User{id: "delegated"}
     subject %{name: "delegated"}
     parent :query
     field :delegated_field
@@ -130,7 +130,7 @@ defmodule ExCop.Test.Policies.Post do
   end
 
   allowance "delegated mutation" do
-    user %User{id: "delegated"}
+    persona %User{id: "delegated"}
     subject %{name: "delegated"}
     parent :mutation
     field :delegated_field

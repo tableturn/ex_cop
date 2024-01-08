@@ -4,7 +4,7 @@ defmodule ExCop.Test.Policies.Comment do
   alias ExCop.Test.Fixtures.User
 
   allowance "delegates to something else" do
-    user %User{id: "delegated"}
+    persona %User{id: "delegated"}
     subject %{body: "delegated"}
     parent :delegated_parent
     field :delegated_field
@@ -13,7 +13,7 @@ defmodule ExCop.Test.Policies.Comment do
   end
 
   query_allowance "delegates query to something else" do
-    user %User{id: "delegated"}
+    persona %User{id: "delegated"}
     subject %{body: "delegated"}
     field :delegated_field
     args %{delegated: true}
@@ -21,7 +21,7 @@ defmodule ExCop.Test.Policies.Comment do
   end
 
   mutation_allowance "delegates mutation to something else" do
-    user %User{id: "delegated"}
+    persona %User{id: "delegated"}
     subject %{body: "delegated"}
     field :delegated_field
     args %{delegated: true}
