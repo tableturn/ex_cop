@@ -9,7 +9,7 @@ defmodule ExCop.MixProject do
       source_url: "https://github.com/tableturn/ex_cop",
       homepage_url: "https://github.com/tableturn/ex_cop",
       docs: [extras: ~w(README.md)],
-      version: "0.1.5",
+      version: "1.0.0",
       elixir: "~> 1.6",
       start_permanent: Mix.env() == :prod,
       elixirc_paths: elixirc_paths(Mix.env()),
